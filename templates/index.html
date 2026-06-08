@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiskSyncer - Duplicate File Finder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .input-section input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-section input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-section button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+        }
+
+        .input-section button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .input-section button:active {
+            transform: translateY(0);
+        }
+
+        .input-section button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .progress-container {
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .status-message {
+            color: #666;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .results-container {
+            display: none;
+        }
+
+        .results-summary {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            display: inline-block;
+            margin-right: 30px;
+            margin-bottom: 10px;
+        }
+
+        .summary-item label {
+            color: #666;
+            font-weight: bold;
+        }
+
+        .summary-item .value {
+            color: #667eea;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .duplicate-group {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .duplicate-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .duplicate-header:hover {
+            background: #f0f0f0;
+        }
+
+        .duplicate-info {
+            flex: 1;
+        }
+
+        .duplicate-count {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .duplicate-size {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .duplicate-hash {
+            font-family: monospace;
+            color: #999;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .duplicate-files {
+            display: none;
+            background: white;
+            padding: 10px;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 10px;
+        }
+
+        .duplicate-files.expanded {
+            display: block;
+        }
+
+        .file-item {
+            padding: 8px 5px;
+            border-bottom: 1px solid #f0f0f0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item:hover {
+            background: #f5f5f5;
+        }
+
+        .no-duplicates {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 1.1em;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #c62828;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #2e7d32;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        .toggle-arrow {
+            display: inline-block;
+            margin-right: 10px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-arrow.expanded {
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 DiskSyncer</h1>
+            <p>Duplicate File Finder</p>
+        </div>
+
+        <div class="content">
+            <div class="error" id="errorMessage"></div>
+            <div class="success" id="successMessage"></div>
+
+            <div class="section">
+                <h2>Scan Directory</h2>
+                <div class="input-section">
+                    <input 
+                        type="text" 
+                        id="directoryInput" 
+                        placeholder="Enter directory path (e.g., /home/user/documents or C:\Users\Documents)"
+                    >
+                    <button onclick="startScan()" id="scanButton">Start Scan</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Scan Progress</h2>
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill">0%</div>
+                    </div>
+                    <div class="status-message" id="statusMessage"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Results</h2>
+                <div class="results-container" id="resultsContainer">
+                    <div class="results-summary" id="resultsSummary"></div>
+                    <div id="duplicatesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentScanId = null;
+        let scanInterval = null;
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+            setTimeout(() => successDiv.classList.remove('show'), 5000);
+        }
+
+        async function startScan() {
+            const directory = document.getElementById('directoryInput').value.trim();
+            
+            if (!directory) {
+                showError('Please enter a directory path');
+                return;
+            }
+
+            document.getElementById('scanButton').disabled = true;
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('errorMessage').classList.remove('show');
+
+            try {
+                const response = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ directory })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    showError(error.error || 'Failed to start scan');
+                    document.getElementById('scanButton').disabled = false;
+                    document.getElementById('progressContainer').style.display = 'none';
+                    return;
+                }
+
+                const data = await response.json();
+                currentScanId = data.scan_id;
+                
+                showSuccess(`Scan started (ID: ${currentScanId})`);
+                monitorScan();
+            } catch (error) {
+                showError('Error starting scan: ' + error.message);
+                document.getElementById('scanButton').disabled = false;
+                document.getElementById('progressContainer').style.display = 'none';
+            }
+        }
+
+        async function monitorScan() {
+            scanInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/scan/${currentScanId}/status`);
+                    const data = await response.json();
+
+                    // Update progress
+                    const percentage = data.total_files > 0 
+                        ? Math.round((data.processed_files / data.total_files) * 100) 
+                        : 0;
+                    
+                    document.getElementById('progressFill').style.width = percentage + '%';
+                    document.getElementById('progressFill').textContent = percentage + '%';
+                    document.getElementById('statusMessage').textContent = data.message;
+
+                    if (data.status === 'completed' || data.status === 'error') {
+                        clearInterval(scanInterval);
+                        document.getElementById('scanButton').disabled = false;
+
+                        if (data.status === 'error') {
+                            showError('Scan failed: ' + data.message);
+                            document.getElementById('progressContainer').style.display = 'none';
+                        } else {
+                            showSuccess(`Scan completed! Found ${data.total_duplicates} duplicate files`);
+                            displayResults();
+                        }
+                    }
+                } catch (error) {
+                    clearInterval(scanInterval);
+                    showError('Error monitoring scan: ' + error.message);
+                    document.getElementById('scanButton').disabled = false;
+                }
+            }, 500);
+        }
+
+        async function displayResults() {
+            try {
+                const response = await fetch(`/api/scan/${currentScanId}/results`);
+                const data = await response.json();
+
+                // Display summary
+                const summary = `
+                    <div class="summary-item">
+                        <label>Directory:</label>
+                        <div>${data.directory}</div>
+                    </div>
+                    <div class="summary-item">
+                        <label>Duplicate Groups:</label>
+                        <div class="value">${data.total_duplicate_groups}</div>
+                    </div>
+                    <div class="summary-item">
+                        <label>Duplicate Files:</label>
+                        <div class="value">${data.total_duplicate_files}</div>
+                    </div>
+                `;
+                document.getElementById('resultsSummary').innerHTML = summary;
+
+                // Display duplicates
+                let html = '';
+                if (data.duplicates.length === 0) {
+                    html = '<div class="no-duplicates">✓ No duplicate files found</div>';
+                } else {
+                    data.duplicates.forEach((group, index) => {
+                        const sizeDisplay = formatFileSize(group.size);
+                        const filesDisplay = group.files.map(f => `<div class="file-item">📄 ${f}</div>`).join('');
+                        
+                        html += `
+                            <div class="duplicate-group">
+                                <div class="duplicate-header" onclick="toggleFiles(${index})">
+                                    <div class="duplicate-info">
+                                        <span class="toggle-arrow" id="arrow-${index}">▶</span>
+                                        <span class="duplicate-count">${group.count} files</span>
+                                        <div class="duplicate-size">Size per file: ${sizeDisplay}</div>
+                                        <div class="duplicate-hash">Hash: ${group.hash.substring(0, 16)}...</div>
+                                    </div>
+                                </div>
+                                <div class="duplicate-files" id="files-${index}">
+                                    ${filesDisplay}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                document.getElementById('duplicatesList').innerHTML = html;
+                document.getElementById('resultsContainer').style.display = 'block';
+                document.getElementById('progressContainer').style.display = 'none';
+            } catch (error) {
+                showError('Error displaying results: ' + error.message);
+            }
+        }
+
+        function toggleFiles(index) {
+            const filesDiv = document.getElementById(`files-${index}`);
+            const arrow = document.getElementById(`arrow-${index}`);
+            
+            filesDiv.classList.toggle('expanded');
+            arrow.classList.toggle('expanded');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Load previous scans on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/scans');
+                const scans = await response.json();
+                if (scans.length > 0) {
+                    const lastScan = scans[scans.length - 1];
+                    if (lastScan.status === 'completed') {
+                        currentScanId = lastScan.scan_id;
+                        displayResults();
+                    }
+                }
+            } catch (error) {
+                console.log('No previous scans available');
+            }
+        });
+    </script>
+</body>
+</html>
