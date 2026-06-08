@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DiskSyncer - Duplicate File Finder</title>
+    <title>DiskSyncer - Duplicate File Manager</title>
     <style>
         * {
             margin: 0;
@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 10px;
@@ -46,6 +46,41 @@
 
         .content {
             padding: 40px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-button:hover {
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .input-section {
@@ -109,6 +144,12 @@
             padding-bottom: 10px;
         }
 
+        .section h3 {
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
         .progress-container {
             display: none;
         }
@@ -150,23 +191,27 @@
             padding: 20px;
             border-radius: 5px;
             margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
         }
 
         .summary-item {
-            display: inline-block;
-            margin-right: 30px;
-            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
         }
 
         .summary-item label {
             color: #666;
             font-weight: bold;
+            font-size: 0.9em;
         }
 
         .summary-item .value {
             color: #667eea;
-            font-size: 1.3em;
+            font-size: 1.5em;
             font-weight: bold;
+            margin-top: 5px;
         }
 
         .duplicate-group {
@@ -203,7 +248,7 @@
             font-size: 0.9em;
         }
 
-        .duplicate-size {
+        .duplicate-meta {
             color: #999;
             font-size: 0.9em;
             margin-top: 5px;
@@ -213,10 +258,9 @@
             font-family: monospace;
             color: #999;
             font-size: 0.85em;
-            margin-top: 5px;
         }
 
-        .duplicate-files {
+        .duplicate-content {
             display: none;
             background: white;
             padding: 10px;
@@ -224,25 +268,97 @@
             margin-top: 10px;
         }
 
-        .duplicate-files.expanded {
+        .duplicate-content.expanded {
             display: block;
         }
 
         .file-item {
-            padding: 8px 5px;
-            border-bottom: 1px solid #f0f0f0;
-            word-break: break-all;
-            font-family: monospace;
-            font-size: 0.9em;
-            color: #333;
-        }
-
-        .file-item:last-child {
-            border-bottom: none;
+            padding: 12px;
+            border: 1px solid #f0f0f0;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .file-item:hover {
             background: #f5f5f5;
+        }
+
+        .file-path {
+            flex: 1;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #333;
+            word-break: break-all;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.85em;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .action-btn.delete {
+            border-color: #c62828;
+            color: #c62828;
+        }
+
+        .action-btn.delete:hover {
+            background: #ffebee;
+        }
+
+        .action-btn.keep {
+            border-color: #2e7d32;
+            color: #2e7d32;
+        }
+
+        .action-btn.keep:hover {
+            background: #e8f5e9;
+        }
+
+        .action-btn.preview {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .action-btn.preview:hover {
+            background: #f3f6ff;
+        }
+
+        .file-preview {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85em;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .file-preview.show {
+            display: block;
         }
 
         .no-duplicates {
@@ -289,46 +405,250 @@
         .toggle-arrow.expanded {
             transform: rotate(90deg);
         }
+
+        .ignore-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .ignore-tag {
+            background: #e0e0e0;
+            color: #333;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ignore-tag button {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .ignore-tag button:hover {
+            color: #333;
+        }
+
+        .ignore-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .ignore-input-group input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .ignore-input-group button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ignore-input-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        .comparison-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+
+        .comparison-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .bulk-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.2s;
+        }
+
+        .bulk-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .bulk-btn.danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                text-align: left;
+            }
+
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .file-actions {
+                width: 100%;
+            }
+
+            .results-summary {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🔍 DiskSyncer</h1>
-            <p>Duplicate File Finder</p>
+            <p>Advanced Duplicate File Manager</p>
         </div>
 
         <div class="content">
             <div class="error" id="errorMessage"></div>
             <div class="success" id="successMessage"></div>
 
-            <div class="section">
-                <h2>Scan Directory</h2>
-                <div class="input-section">
-                    <input 
-                        type="text" 
-                        id="directoryInput" 
-                        placeholder="Enter directory path (e.g., /home/user/documents or C:\Users\Documents)"
-                    >
-                    <button onclick="startScan()" id="scanButton">Start Scan</button>
-                </div>
+            <!-- Tabs Navigation -->
+            <div class="tabs">
+                <button class="tab-button active" onclick="switchTab('scan')">📁 Scan</button>
+                <button class="tab-button" onclick="switchTab('results')">📊 Results</button>
+                <button class="tab-button" onclick="switchTab('ignore')">⚙️ Ignore Patterns</button>
             </div>
 
-            <div class="section">
-                <h2>Scan Progress</h2>
-                <div class="progress-container" id="progressContainer">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill">0%</div>
+            <!-- SCAN TAB -->
+            <div id="scan" class="tab-content active">
+                <div class="section">
+                    <h2>Scan Directory</h2>
+                    <div class="input-section">
+                        <input 
+                            type="text" 
+                            id="directoryInput" 
+                            placeholder="Enter directory path (e.g., /home/user/documents or C:\Users\Documents)"
+                        >
+                        <button onclick="startScan()" id="scanButton">Start Scan</button>
                     </div>
-                    <div class="status-message" id="statusMessage"></div>
+                </div>
+
+                <div class="section">
+                    <h2>Scan Progress</h2>
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill">0%</div>
+                        </div>
+                        <div class="status-message" id="statusMessage"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="section">
-                <h2>Results</h2>
-                <div class="results-container" id="resultsContainer">
-                    <div class="results-summary" id="resultsSummary"></div>
-                    <div id="duplicatesList"></div>
+            <!-- RESULTS TAB -->
+            <div id="results" class="tab-content">
+                <div class="section">
+                    <h2>Duplicate Files Found</h2>
+                    <div class="results-container" id="resultsContainer">
+                        <div class="results-summary" id="resultsSummary"></div>
+                        
+                        <div class="bulk-actions" id="bulkActions" style="display: none;">
+                            <button class="bulk-btn" onclick="selectAllDuplicates()">✓ Select All</button>
+                            <button class="bulk-btn" onclick="deselectAllDuplicates()">✗ Deselect All</button>
+                            <button class="bulk-btn danger" onclick="deleteSelected()">🗑️ Delete Selected</button>
+                        </div>
+
+                        <div id="duplicatesList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IGNORE PATTERNS TAB -->
+            <div id="ignore" class="tab-content">
+                <div class="section">
+                    <h2>Configure Ignore Patterns</h2>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        Files matching these patterns will be excluded from duplicate scanning.
+                    </p>
+                    
+                    <h3>Add New Pattern</h3>
+                    <div class="ignore-input-group">
+                        <input 
+                            type="text" 
+                            id="ignorePatternInput" 
+                            placeholder="e.g., node_modules, .git, *.log, backup/"
+                        >
+                        <button onclick="addIgnorePattern()">Add Pattern</button>
+                    </div>
+
+                    <h3>Active Ignore Patterns</h3>
+                    <div class="ignore-list" id="ignoreList">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Ignore Extensions</h2>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        Files with these extensions will be skipped during scanning.
+                    </p>
+                    
+                    <div class="ignore-input-group">
+                        <input 
+                            type="text" 
+                            id="ignoreExtensionInput" 
+                            placeholder="e.g., .lock, .cache, .tmp"
+                        >
+                        <button onclick="addIgnoreExtension()">Add Extension</button>
+                    </div>
+
+                    <div class="ignore-list" id="ignoreExtensionList">
+                        <!-- Populated by JavaScript -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -337,6 +657,28 @@
     <script>
         let currentScanId = null;
         let scanInterval = null;
+        let ignorePatterns = ['node_modules', '.git', '.env', 'dist', 'build', '.DS_Store'];
+        let ignoreExtensions = ['.lock', '.cache'];
+        let selectedForDeletion = new Set();
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load ignore patterns on demand
+            if (tabName === 'ignore') {
+                loadIgnorePatterns();
+            }
+        }
 
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
@@ -371,7 +713,11 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ directory })
+                    body: JSON.stringify({ 
+                        directory,
+                        ignorePatterns: ignorePatterns,
+                        ignoreExtensions: ignoreExtensions
+                    })
                 });
 
                 if (!response.ok) {
@@ -400,7 +746,6 @@
                     const response = await fetch(`/api/scan/${currentScanId}/status`);
                     const data = await response.json();
 
-                    // Update progress
                     const percentage = data.total_files > 0 
                         ? Math.round((data.processed_files / data.total_files) * 100) 
                         : 0;
@@ -418,6 +763,7 @@
                             document.getElementById('progressContainer').style.display = 'none';
                         } else {
                             showSuccess(`Scan completed! Found ${data.total_duplicates} duplicate files`);
+                            switchTab('results');
                             displayResults();
                         }
                     }
@@ -434,11 +780,12 @@
                 const response = await fetch(`/api/scan/${currentScanId}/results`);
                 const data = await response.json();
 
-                // Display summary
+                const totalSize = data.duplicates.reduce((sum, g) => sum + (g.size * (g.count - 1)), 0);
+
                 const summary = `
                     <div class="summary-item">
                         <label>Directory:</label>
-                        <div>${data.directory}</div>
+                        <div class="value">${data.directory}</div>
                     </div>
                     <div class="summary-item">
                         <label>Duplicate Groups:</label>
@@ -448,17 +795,32 @@
                         <label>Duplicate Files:</label>
                         <div class="value">${data.total_duplicate_files}</div>
                     </div>
+                    <div class="summary-item">
+                        <label>Space to Recover:</label>
+                        <div class="value">${formatFileSize(totalSize)}</div>
+                    </div>
                 `;
                 document.getElementById('resultsSummary').innerHTML = summary;
 
-                // Display duplicates
                 let html = '';
                 if (data.duplicates.length === 0) {
                     html = '<div class="no-duplicates">✓ No duplicate files found</div>';
+                    document.getElementById('bulkActions').style.display = 'none';
                 } else {
+                    document.getElementById('bulkActions').style.display = 'flex';
                     data.duplicates.forEach((group, index) => {
                         const sizeDisplay = formatFileSize(group.size);
-                        const filesDisplay = group.files.map(f => `<div class="file-item">📄 ${f}</div>`).join('');
+                        const filesDisplay = group.files.map((f, fIndex) => `
+                            <div class="file-item">
+                                <div class="file-path">📄 ${f}</div>
+                                <div class="file-actions">
+                                    <button class="action-btn preview" onclick="previewFile('${f.replace(/'/g, "\\'")}', ${index}, ${fIndex})">👁️ Preview</button>
+                                    <button class="action-btn keep" onclick="markAsKeep(${index}, ${fIndex})">✓ Keep</button>
+                                    <button class="action-btn delete" onclick="markForDeletion('${f.replace(/'/g, "\\'")}', ${index})">🗑️ Delete</button>
+                                </div>
+                                <div class="file-preview" id="preview-${index}-${fIndex}"></div>
+                            </div>
+                        `).join('');
                         
                         html += `
                             <div class="duplicate-group">
@@ -466,11 +828,14 @@
                                     <div class="duplicate-info">
                                         <span class="toggle-arrow" id="arrow-${index}">▶</span>
                                         <span class="duplicate-count">${group.count} files</span>
-                                        <div class="duplicate-size">Size per file: ${sizeDisplay}</div>
-                                        <div class="duplicate-hash">Hash: ${group.hash.substring(0, 16)}...</div>
+                                        <div class="duplicate-meta">
+                                            Size per file: ${sizeDisplay} | 
+                                            Total duplicated: ${formatFileSize(group.size * (group.count - 1))}
+                                        </div>
+                                        <div class="duplicate-hash">Hash: ${group.hash}</div>
                                     </div>
                                 </div>
-                                <div class="duplicate-files" id="files-${index}">
+                                <div class="duplicate-content" id="files-${index}">
                                     ${filesDisplay}
                                 </div>
                             </div>
@@ -493,6 +858,151 @@
             arrow.classList.toggle('expanded');
         }
 
+        async function previewFile(filePath, groupIndex, fileIndex) {
+            const previewDiv = document.getElementById(`preview-${groupIndex}-${fileIndex}`);
+            
+            if (previewDiv.classList.contains('show')) {
+                previewDiv.classList.remove('show');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filePath })
+                });
+
+                const data = await response.json();
+                previewDiv.textContent = data.preview || '[Binary file or empty]';
+                previewDiv.classList.add('show');
+            } catch (error) {
+                previewDiv.textContent = `Error loading preview: ${error.message}`;
+                previewDiv.classList.add('show');
+            }
+        }
+
+        function markForDeletion(filePath, groupIndex) {
+            if (confirm(`Delete "${filePath}"?`)) {
+                selectedForDeletion.add(filePath);
+                showSuccess(`Marked for deletion: ${filePath}`);
+            }
+        }
+
+        function markAsKeep(groupIndex, fileIndex) {
+            showSuccess('File marked to keep in this group');
+        }
+
+        async function deleteSelected() {
+            if (selectedForDeletion.size === 0) {
+                showError('No files selected for deletion');
+                return;
+            }
+
+            const files = Array.from(selectedForDeletion);
+            if (!confirm(`Delete ${files.length} file(s)?`)) return;
+
+            try {
+                const response = await fetch('/api/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ files })
+                });
+
+                const data = await response.json();
+                selectedForDeletion.clear();
+                showSuccess(`Deleted ${data.deleted} file(s)`);
+                displayResults();
+            } catch (error) {
+                showError('Error deleting files: ' + error.message);
+            }
+        }
+
+        function selectAllDuplicates() {
+            document.querySelectorAll('.file-item').forEach(item => {
+                const path = item.querySelector('.file-path').textContent;
+                selectedForDeletion.add(path.substring(2)); // Remove emoji
+            });
+            showSuccess('All duplicates selected');
+        }
+
+        function deselectAllDuplicates() {
+            selectedForDeletion.clear();
+            showSuccess('All duplicates deselected');
+        }
+
+        function addIgnorePattern() {
+            const input = document.getElementById('ignorePatternInput');
+            const pattern = input.value.trim();
+
+            if (!pattern) {
+                showError('Please enter a pattern');
+                return;
+            }
+
+            if (!ignorePatterns.includes(pattern)) {
+                ignorePatterns.push(pattern);
+                loadIgnorePatterns();
+                input.value = '';
+                showSuccess(`Added pattern: ${pattern}`);
+            } else {
+                showError('Pattern already exists');
+            }
+        }
+
+        function addIgnoreExtension() {
+            const input = document.getElementById('ignoreExtensionInput');
+            const ext = input.value.trim();
+
+            if (!ext) {
+                showError('Please enter an extension');
+                return;
+            }
+
+            if (!ignoreExtensions.includes(ext)) {
+                ignoreExtensions.push(ext);
+                loadIgnorePatterns();
+                input.value = '';
+                showSuccess(`Added extension: ${ext}`);
+            } else {
+                showError('Extension already exists');
+            }
+        }
+
+        function removeIgnorePattern(pattern) {
+            ignorePatterns = ignorePatterns.filter(p => p !== pattern);
+            loadIgnorePatterns();
+            showSuccess(`Removed pattern: ${pattern}`);
+        }
+
+        function removeIgnoreExtension(ext) {
+            ignoreExtensions = ignoreExtensions.filter(e => e !== ext);
+            loadIgnorePatterns();
+            showSuccess(`Removed extension: ${ext}`);
+        }
+
+        function loadIgnorePatterns() {
+            const patternList = document.getElementById('ignoreList');
+            patternList.innerHTML = ignorePatterns
+                .map(p => `
+                    <div class="ignore-tag">
+                        📁 ${p}
+                        <button onclick="removeIgnorePattern('${p}')">×</button>
+                    </div>
+                `)
+                .join('');
+
+            const extensionList = document.getElementById('ignoreExtensionList');
+            extensionList.innerHTML = ignoreExtensions
+                .map(e => `
+                    <div class="ignore-tag">
+                        📄 ${e}
+                        <button onclick="removeIgnoreExtension('${e}')">×</button>
+                    </div>
+                `)
+                .join('');
+        }
+
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -501,21 +1011,9 @@
             return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
 
-        // Load previous scans on page load
-        window.addEventListener('load', async () => {
-            try {
-                const response = await fetch('/api/scans');
-                const scans = await response.json();
-                if (scans.length > 0) {
-                    const lastScan = scans[scans.length - 1];
-                    if (lastScan.status === 'completed') {
-                        currentScanId = lastScan.scan_id;
-                        displayResults();
-                    }
-                }
-            } catch (error) {
-                console.log('No previous scans available');
-            }
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            loadIgnorePatterns();
         });
     </script>
 </body>
